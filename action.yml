@@ -89,7 +89,7 @@ runs:
     - name: Download EDAMAME Posture binary
       run: |
         # Position the binary in the home folder of the runner if not already present
-        cd ../../
+        cd
         if [[ "$RUNNER_OS" == "Linux" ]]; then
           if [[ ! -f edamame_posture ]]; then
             wget https://edamame-posture.s3.eu-west-1.amazonaws.com/linux/latest/edamame_posture
