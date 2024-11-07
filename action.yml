@@ -95,22 +95,28 @@ runs:
 
         if [[ "$RUNNER_OS" == "Linux" ]]; then
           if [[ -f edamame_posture ]]; then
+            echo "Binary already present"
             binary_present=true
           else
+            echo "Downloading EDAMAME Posture binary for Linux..."
             wget https://edamame-posture.s3.eu-west-1.amazonaws.com/linux/latest/edamame_posture
             chmod u+x edamame_posture
           fi
         elif [[ "$RUNNER_OS" == "macOS" ]]; then
           if [[ -f edamame_posture ]]; then
+            echo "Binary already present"
             binary_present=true
           else
+            echo "Downloading EDAMAME Posture binary for macOS..."
             wget https://edamame-posture.s3.eu-west-1.amazonaws.com/macos/latest/edamame_posture
             chmod u+x edamame_posture
           fi
         elif [[ "$RUNNER_OS" == "Windows" ]]; then
           if [[ -f edamame_posture.exe ]]; then
+            echo "Binary already present"
             binary_present=true
           else
+            echo "Downloading EDAMAME Posture binary for Windows..."
             wget https://edamame-posture.s3.eu-west-1.amazonaws.com/windows/latest/edamame_posture.exe
           fi
         else
@@ -174,37 +180,34 @@ runs:
             [[ "${1,,}" == "${2,,}" ]]
           }
 
-          if [[ "${{ steps.download_binary.outputs.binary_already_present }}" == "true" ]]; then
-            echo "EDAMAME Posture binary is already present. Checking status..."
-            if [[ "$RUNNER_OS" == "Windows" ]]; then
-              ./edamame_posture.exe status > posture_status.txt
+          # Check if the output indicates no background process is running
+            if grep -q "No background process is running." posture_status.txt; then
+              echo "No background process is running. Proceeding to start the process."
             else
-              sudo ./edamame_posture status > posture_status.txt
-            fi
+              # Extract User and Domain from the status
+              current_user=$(grep ' - User:' posture_status.txt | awk -F': ' '{print $2}')
+              current_domain=$(grep ' - Domain:' posture_status.txt | awk -F': ' '{print $2}')
+              connected=$(grep ' - Connected:' posture_status.txt | awk -F': ' '{print $2}')
 
-            # Extract User and Domain from the status
-            current_user=$(grep ' - User:' posture_status.txt | awk -F': ' '{print $2}')
-            current_domain=$(grep ' - Domain:' posture_status.txt | awk -F': ' '{print $2}')
-            connected=$(grep ' - Connected:' posture_status.txt | awk -F': ' '{print $2}')
+              echo "Current User: $current_user"
+              echo "Current Domain: $current_domain"
+              echo "Connected: $connected"
 
-            echo "Current User: $current_user"
-            echo "Current Domain: $current_domain"
-            echo "Connected: $connected"
-
-            # Compare with inputs
-            if [[ "$connected" == "true" ]] && case_insensitive_compare "$current_user" "${{ inputs.edamame_user }}" && case_insensitive_compare "$current_domain" "${{ inputs.edamame_domain }}"; then
-              echo "EDAMAME Posture is already running with the specified user and domain. Skipping start process."
-              # Exit the step successfully to proceed to the next step
-              exit 0
-            else
-              echo "EDAMAME Posture is not running with the specified user/domain or not connected. Restarting the process..."
-              # Stop the existing process
-              if [[ "$RUNNER_OS" == "Windows" ]]; then
-                ./edamame_posture.exe stop
+              # Compare with inputs
+              if [[ "$connected" == "true" ]] && case_insensitive_compare "$current_user" "${{ inputs.edamame_user }}" && case_insensitive_compare "$current_domain" "${{ inputs.edamame_domain }}"; then
+                echo "EDAMAME Posture is already running with the specified user and domain. Skipping start process."
+                # Exit the step successfully to proceed to the next step
+                exit 0
               else
-                sudo ./edamame_posture stop
+                echo "EDAMAME Posture is not running with the specified user/domain or not connected. Restarting the process..."
+                # Stop the existing process
+                if [[ "$RUNNER_OS" == "Windows" ]]; then
+                  ./edamame_posture.exe stop
+                else
+                  sudo ./edamame_posture stop
+                fi
+                echo "Stopped the existing EDAMAME Posture process."
               fi
-              echo "Stopped the existing EDAMAME Posture process."
             fi
           fi
 
