@@ -1,0 +1,342 @@
+name: "Setup EDAMAME Posture"
+description: "Download and control EDAMAME Posture"
+inputs:
+  edamame_user:
+    description: "EDAMAME Posture User (required to start the process in the background)"
+    required: false
+  edamame_domain:
+    description: "EDAMAME Posture Domain (required to start the process in the background)"
+    required: false
+  edamame_pin:
+    description: "EDAMAME Posture PIN (required to start the process in the background)"
+    required: false
+  edamame_id:
+    description: "EDAMAME identifier suffix (required to start the process in the background)"
+    required: false
+  auto_remediate:
+    description: "Automatically remediate posture issues"
+    required: false
+    default: "false"
+  skip_remediations:
+    description: "Remediations to skip when performing auto-remediations (comma separated)"
+    required: false
+  network_scan:
+    description: "Scan network for critical devices and capture network traffic (only applicable if the background process is started)"
+    required: false
+    default: "false"
+  dump_sessions_log:
+    description: "Dump sessions log (only effective if the background process is started with network_scan set to true)"
+    required: false
+    default: "false"
+  checkout:
+    description: "Checkout the repo through the git CLI (retry if access is not granted)"
+    required: false
+    default: "false"
+  checkout_submodules:
+    description: "Checkout submodules"
+    required: false
+    default: "false"
+  wait_for_api:
+    description: "Wait for API access to be granted"
+    required: false
+    default: "false"
+  wait_for_https:
+    description: "Wait for https access to the repo be granted"
+    required: false
+    default: "false"
+  wait:
+    description: "Wait for a while for access to be granted"
+    required: false
+    default: "false"
+  token:
+    description: "GitHub token to checkout the repo"
+    required: false
+    default: ${{ github.token }}
+  display_logs:
+    description: "Display posture logs"
+    required: false
+    default: "true"
+  whitelist:
+    description: "Whitelist to use for the network scan (only applicable if the background process is started)"
+    required: false
+    default: "github"
+  whitelist_conformance:
+    description: "Exit with error when non-compliant endpoints are detected (only applicable if the background process is started)"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Dependencies
+      run: |
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          # Install wget and curl using Chocolatey if not already installed
+          if ! choco list -lo | grep -q '^wget$'; then
+            choco install wget -y
+          fi
+          if ! choco list -lo | grep -q '^curl$'; then
+            choco install curl -y
+          fi
+        elif [[ "$RUNNER_OS" == "Linux" ]]; then
+          # Update package lists and install necessary packages
+          sudo apt-get update
+          sudo apt-get install -y git libpcap0.8 wget build-essential
+        fi
+      shell: bash
+
+    - name: Download EDAMAME Posture binary
+      run: |
+        # Position the binary in the home folder of the runner if not already present
+        cd ../
+        if [[ "$RUNNER_OS" == "Linux" ]]; then
+          if [[ ! -f edamame_posture ]]; then
+            wget https://edamame-posture.s3.eu-west-1.amazonaws.com/linux/latest/edamame_posture
+            chmod u+x edamame_posture
+          fi
+        elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          if [[ ! -f edamame_posture ]]; then
+            wget https://edamame-posture.s3.eu-west-1.amazonaws.com/macos/latest/edamame_posture
+            chmod u+x edamame_posture
+          fi
+        elif [[ "$RUNNER_OS" == "Windows" ]]; then
+          if [[ ! -f edamame_posture.exe ]]; then
+            wget https://edamame-posture.s3.eu-west-1.amazonaws.com/windows/latest/edamame_posture.exe
+          fi
+        else
+          echo "Unsupported OS: $RUNNER_OS"
+          exit 1
+        fi
+      shell: bash
+
+    - name: Show initial posture
+      run: |
+        cd ..
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          # No sudo on Windows
+          ./edamame_posture.exe score
+        else
+          sudo ./edamame_posture score
+        fi
+      shell: bash
+
+    - name: Auto remediate/harden posture issues if requested
+      run: |
+        cd ..
+        if [[ "${{ inputs.auto_remediate }}" == "true" ]]; then
+          if [[ "${{ inputs.skip_remediations }}" == "" ]]; then
+            echo "No remediations to skip"
+            if [[ "$RUNNER_OS" == "Windows" ]]; then
+              # No sudo on Windows
+              ./edamame_posture.exe remediate
+            else
+              sudo ./edamame_posture remediate
+            fi
+          else
+            echo "Skipping remediations: ${{ inputs.skip_remediations }}"
+            if [[ "$RUNNER_OS" == "Windows" ]]; then
+              # No sudo on Windows
+              ./edamame_posture.exe remediate "${{ inputs.skip_remediations }}"
+            else
+              sudo ./edamame_posture remediate "${{ inputs.skip_remediations }}"
+            fi
+          fi
+        fi
+      shell: bash
+
+    - name: Wait for a while if requested
+      run: |
+        if [[ "${{ inputs.wait }}" == "true" ]]; then
+          sleep 180
+        fi
+      shell: bash
+
+    - name: Start EDAMAME Posture process and wait for connection if all arguments are provided, skip otherwise
+      run: |
+        cd ..
+        # Check if all arguments are provided
+        if [[ -n "${{ inputs.edamame_user }}" && -n "${{ inputs.edamame_domain }}" && -n "${{ inputs.edamame_pin }}" && -n "${{ inputs.edamame_id }}" ]]; then
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            # No sudo on Windows
+            if [[ "${{ inputs.whitelist }}" != "" ]]; then
+              ./edamame_posture.exe start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}" "${{ inputs.whitelist }}_windows"
+            else
+              ./edamame_posture.exe start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}"
+            fi
+            ./edamame_posture.exe wait-for-connection
+          else
+            if [[ "$RUNNER_OS" == "macOS" ]]; then
+              if [[ "${{ inputs.whitelist }}" != "" ]]; then
+                sudo ./edamame_posture start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}" "${{ inputs.whitelist }}_macos"
+              else
+                sudo ./edamame_posture start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}"
+              fi
+              sudo ./edamame_posture wait-for-connection
+            else
+              if [[ "$RUNNER_OS" == "Linux" ]]; then
+                if [[ "${{ inputs.whitelist }}" != "" ]]; then
+                  sudo ./edamame_posture start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}" "${{ inputs.whitelist }}_ubuntu"
+                else
+                  sudo ./edamame_posture start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}"
+                fi
+                sudo ./edamame_posture wait-for-connection
+              fi
+            fi
+          fi
+        else
+          # Check if only a partial set of mandatory arguments is provided
+          if [[ -n "${{ inputs.edamame_user }}${{ inputs.edamame_domain }}${{ inputs.edamame_pin }}${{ inputs.edamame_id }}" ]]; then
+            echo "Please provide all required arguments: edamame_user, edamame_domain, edamame_pin, edamame_id"
+          exit 1
+          fi
+        fi
+      shell: bash
+
+    - name: Checkout the repo through the git CLI if requested
+      run: |
+        if [[ "${{ inputs.checkout }}" == "true" ]]; then
+          attempts=0
+          timeout=true
+
+          for i in {1..20}; do
+            attempts=$((attempts + 1))
+            echo "Attempt $attempts: Checking out the repo through the git CLI..."
+            if git init && \
+               git remote add origin https://x-access-token:${{ inputs.token }}@github.com/${{ github.repository }}.git && \
+               git fetch --depth=1 origin ${{ github.ref }}; then
+              branch_name=$(echo "${{ github.ref }}" | sed -e "s/^refs\/heads\///")
+              if git checkout -b "$branch_name" FETCH_HEAD; then
+                if [[ "${{ inputs.checkout_submodules }}" == "true" ]]; then
+                  git submodule update --init --recursive
+                fi
+                timeout=false
+                break
+              fi
+            else
+              echo "Checkout of the repo through the git CLI failed. Waiting for 60 seconds..."
+              sleep 60
+              # Clean up any partial clone before next attempt
+              rm -rf .git
+            fi
+          done
+
+          elapsed_time=$((attempts * 60))
+          elapsed_minutes=$((elapsed_time / 60))
+          elapsed_seconds=$((elapsed_time % 60))
+
+          if [ "$timeout" = true ]; then
+            echo "Timeout occurred while waiting for access to the repo through the git CLI."
+            echo "Total time before timeout: ${elapsed_minutes} minutes and ${elapsed_seconds} seconds."
+            exit 1
+          else
+            echo "Checkout of the repo through the git CLI succeeded."
+            echo "Time taken to checkout: ${elapsed_minutes} minutes and ${elapsed_seconds} seconds."
+
+            # Verify the checked out commit and branch
+            echo "Checked out branch: $(git rev-parse --abbrev-ref HEAD)"
+            echo "Checked out commit: $(git rev-parse HEAD)"
+            if [ "$(git rev-parse HEAD)" != "${{ github.sha }}" ]; then
+              echo "Warning: The checked out commit does not match the expected SHA."
+              echo "Expected: ${{ github.sha }}"
+              echo "Actual: $(git rev-parse HEAD)"
+            fi
+          fi
+        fi
+      shell: bash
+
+    - name: Wait for API access to be granted if requested
+      run: |
+        if [[ "${{ inputs.wait_for_api }}" == "true" ]]; then
+          attempts=0
+          timeout=true
+          for i in {1..20}; do
+            attempts=$((attempts + 1))
+            # We use the GitHub token to access the API using gh release list that requires authentication limited to the scope of the token
+            if gh release list --repo ${{ github.repository }}; then
+              timeout=false
+              break
+            else
+              sleep 60
+            fi
+          done
+
+          elapsed_time=$((attempts * 60))
+          elapsed_minutes=$((elapsed_time / 60))
+          elapsed_seconds=$((elapsed_time % 60))
+
+          if [ "$timeout" = true ]; then
+            echo "Timeout occurred while waiting for API access."
+            echo "Total time before timeout: ${elapsed_minutes} minutes and ${elapsed_seconds} seconds."
+            exit 1
+          else
+            echo "API access granted."
+            echo "Time taken to grant access: ${elapsed_minutes} minutes and ${elapsed_seconds} seconds."
+          fi
+        fi
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Wait for https access to the repo be granted if requested
+      run: |
+        if [[ "${{ inputs.wait_for_https }}" == "true" ]]; then
+          attempts=0
+          timeout=true
+          repo_url="https://github.com/${{ github.repository }}.git"
+
+          for i in {1..20}; do
+            attempts=$((attempts + 1))
+            echo "Attempt $attempts: Checking https access to the repo..."
+            status_code=$(curl -o /dev/null -s -w "%{http_code}" -H "Authorization: token ${{ inputs.token }}" $repo_url)
+
+            if [[ "$status_code" == "301" || "$status_code" == "200" ]]; then
+              timeout=false
+              break
+            else
+              echo "https access to the repo not yet granted. Curl Status Code: $status_code. Waiting for 60 seconds..."
+              sleep 60
+            fi
+          done
+
+          elapsed_time=$((attempts * 60))
+          elapsed_minutes=$((elapsed_time / 60))
+          elapsed_seconds=$((elapsed_time % 60))
+
+          if [ "$timeout" = true ]; then
+            echo "Timeout occurred while waiting for https access to the repo."
+            echo "Total time before timeout: ${elapsed_minutes} minutes and ${elapsed_seconds} seconds."
+            exit 1
+          else
+            echo "https access to the repo granted."
+            echo "Time taken to grant access: ${elapsed_minutes} minutes and ${elapsed_seconds} seconds."
+          fi
+        fi
+      shell: bash
+
+    - name: Display posture logs
+      run: |
+        if [[ "${{ inputs.display_logs }}" == "true" ]]; then
+          cd ..
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            # No sudo on Windows
+            ./edamame_posture.exe logs
+          else
+            sudo ./edamame_posture logs
+          fi
+        fi
+      shell: bash
+
+    - name: Dump sessions log if requested
+      run: |
+        if [[ "${{ inputs.dump_sessions_log }}" == "true" ]]; then
+          cd ..
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            # Not in place due to license issues
+            #./edamame_posture.exe get-sessions || if [[ "${{ inputs.whitelist_conformance }}" == "true" ]]; then exit 1; fi
+            echo "Dumping sessions log is not supported on Windows."
+          else
+            sudo ./edamame_posture get-sessions || if [[ "${{ inputs.whitelist_conformance }}" == "true" ]]; then exit 1; fi
+          fi
+        fi
+      shell: bash
