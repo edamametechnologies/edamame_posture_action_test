@@ -89,7 +89,7 @@ runs:
     - name: Download EDAMAME Posture binary
       run: |
         # Position the binary in the home folder of the runner if not already present
-        cd ../
+        cd ../../
         if [[ "$RUNNER_OS" == "Linux" ]]; then
           if [[ ! -f edamame_posture ]]; then
             wget https://edamame-posture.s3.eu-west-1.amazonaws.com/linux/latest/edamame_posture
@@ -112,7 +112,7 @@ runs:
 
     - name: Show initial posture
       run: |
-        cd ..
+        cd ../../
         if [[ "$RUNNER_OS" == "Windows" ]]; then
           # No sudo on Windows
           ./edamame_posture.exe score
@@ -123,7 +123,7 @@ runs:
 
     - name: Auto remediate/harden posture issues if requested
       run: |
-        cd ..
+        cd ../../
         if [[ "${{ inputs.auto_remediate }}" == "true" ]]; then
           if [[ "${{ inputs.skip_remediations }}" == "" ]]; then
             echo "No remediations to skip"
@@ -154,7 +154,7 @@ runs:
 
     - name: Start EDAMAME Posture process and wait for connection if all arguments are provided, skip otherwise
       run: |
-        cd ..
+        cd ../../
         # Check if all arguments are provided
         if [[ -n "${{ inputs.edamame_user }}" && -n "${{ inputs.edamame_domain }}" && -n "${{ inputs.edamame_pin }}" && -n "${{ inputs.edamame_id }}" ]]; then
           if [[ "$RUNNER_OS" == "Windows" ]]; then
@@ -317,7 +317,7 @@ runs:
     - name: Display posture logs
       run: |
         if [[ "${{ inputs.display_logs }}" == "true" ]]; then
-          cd ..
+          cd ../../
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             # No sudo on Windows
             ./edamame_posture.exe logs
@@ -330,7 +330,7 @@ runs:
     - name: Dump sessions log if requested
       run: |
         if [[ "${{ inputs.dump_sessions_log }}" == "true" ]]; then
-          cd ..
+          cd ../../
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             # Not in place due to license issues
             #./edamame_posture.exe get-sessions || if [[ "${{ inputs.whitelist_conformance }}" == "true" ]]; then exit 1; fi
