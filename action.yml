@@ -175,12 +175,19 @@ runs:
         cd
         # Check if all arguments are provided
         if [[ -n "${{ inputs.edamame_user }}" && -n "${{ inputs.edamame_domain }}" && -n "${{ inputs.edamame_pin }}" && -n "${{ inputs.edamame_id }}" ]]; then
-          # Function to compare strings case-insensitively
-          case_insensitive_compare() {
-            [[ "${1,,}" == "${2,,}" ]]
-          }
+          if [[ "${{ steps.download_binary.outputs.binary_already_present }}" == "true" ]]; then
+            # Function to compare strings case-insensitively
+            case_insensitive_compare() {
+              [[ "${1,,}" == "${2,,}" ]]
+            }
+            echo "EDAMAME Posture binary is already present. Checking status..."
+            if [[ "$RUNNER_OS" == "Windows" ]]; then
+              ./edamame_posture.exe status > posture_status.txt
+            else
+              sudo ./edamame_posture status > posture_status.txt
+            fi
 
-          # Check if the output indicates no background process is running
+            # Check if the output indicates no background process is running
             if grep -q "No background process is running." posture_status.txt; then
               echo "No background process is running. Proceeding to start the process."
             else
