@@ -79,6 +79,7 @@ runs:
           if ! choco list -lo | grep -q '^curl$'; then
             choco install curl -y
           fi
+          choco install vcredist2015 --package-parameters "/install /quiet /norestart" --yes
         elif [[ "$RUNNER_OS" == "Linux" ]]; then
           # Update package lists and install necessary packages
           sudo apt-get update
