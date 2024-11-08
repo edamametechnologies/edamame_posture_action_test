@@ -117,7 +117,7 @@ runs:
             binary_present=true
           else
             echo "Downloading EDAMAME Posture binary for Windows..."
-            wget https://edamame-posture.s3.eu-west-1.amazonaws.com/windows/latest/edamame_posture.exe
+            curl -o edamame_posture.exe https://edamame-posture.s3.eu-west-1.amazonaws.com/windows/latest/edamame_posture.exe
           fi
         else
           echo "Unsupported OS: $RUNNER_OS"
