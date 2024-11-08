@@ -132,7 +132,6 @@ runs:
     - name: Show initial posture
       run: |
         cd
-        ls
         if [[ "$RUNNER_OS" == "Windows" ]]; then
           # No sudo on Windows
           ./edamame_posture.exe score
@@ -227,6 +226,7 @@ runs:
             else
               ./edamame_posture.exe start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}"
             fi
+            echo "Waiting for connection... Windows"
             ./edamame_posture.exe wait-for-connection
           else
             if [[ "$RUNNER_OS" == "macOS" ]]; then
@@ -235,6 +235,7 @@ runs:
               else
                 sudo ./edamame_posture start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}"
               fi
+              echo "Waiting for connection... macOS"
               sudo ./edamame_posture wait-for-connection
             else
               if [[ "$RUNNER_OS" == "Linux" ]]; then
@@ -243,6 +244,7 @@ runs:
                 else
                   sudo ./edamame_posture start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}"
                 fi
+                echo "Waiting for connection... Linux"
                 sudo ./edamame_posture wait-for-connection
               fi
             fi
