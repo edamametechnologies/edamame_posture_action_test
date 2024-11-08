@@ -131,6 +131,7 @@ runs:
     - name: Show initial posture
       run: |
         cd
+        ls
         if [[ "$RUNNER_OS" == "Windows" ]]; then
           # No sudo on Windows
           ./edamame_posture.exe score
