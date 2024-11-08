@@ -74,7 +74,7 @@ runs:
         if [[ "$RUNNER_OS" == "Windows" ]]; then
           # Install wget and curl using Chocolatey if not already installed
           if ! choco list -lo | grep -q '^wget$'; then
-            choco install wget -y
+            choco install wget -y --force
           fi
           if ! choco list -lo | grep -q '^curl$'; then
             choco install curl -y
