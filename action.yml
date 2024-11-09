@@ -227,7 +227,6 @@ runs:
               ./edamame_posture.exe start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}"
             fi
             echo "Waiting for connection... Windows"
-            sleep 80
             ./edamame_posture.exe wait-for-connection
           else
             if [[ "$RUNNER_OS" == "macOS" ]]; then
@@ -237,7 +236,6 @@ runs:
                 sudo ./edamame_posture start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}"
               fi
               echo "Waiting for connection... macOS"
-              sleep 80
               sudo ./edamame_posture wait-for-connection
             else
               if [[ "$RUNNER_OS" == "Linux" ]]; then
@@ -247,7 +245,6 @@ runs:
                   sudo ./edamame_posture start "${{ inputs.edamame_user }}" "${{ inputs.edamame_domain }}" "${{ inputs.edamame_pin }}" "${{ inputs.edamame_id }}" "${{ inputs.network_scan }}"
                 fi
                 echo "Waiting for connection... Linux"
-                sleep 80
                 sudo ./edamame_posture wait-for-connection
               fi
             fi
