@@ -75,16 +75,29 @@ runs:
           cd
           # Install wget and curl using Chocolatey if not already installed
           if ! choco list -lo | grep -q '^wget$'; then
-            choco install wget -y --force
+            choco install wget -y
           fi
           if ! choco list -lo | grep -q '^curl$'; then
             choco install curl -y
           fi
           choco install vcredist2015 --package-parameters "/install /quiet /norestart" --yes
-          wget https://github.com/edamametechnologies/edamame_posture_cli/raw/refs/heads/main/windows/Packet.dll -O Packet.dll
-          chmod +x Packet.dll
-          wget https://github.com/edamametechnologies/edamame_posture_cli/raw/refs/heads/main/windows/wpcap.dll -O wpcap.dll
-          chmod +x wpcap.dll
+          # Check and download Packet.dll
+          if [ ! -f "Packet.dll" ]; then
+              echo "Packet.dll not found. Downloading..."
+              wget https://github.com/edamametechnologies/edamame_posture_cli/raw/refs/heads/main/windows/Packet.dll -O Packet.dll
+              chmod +x Packet.dll
+          else
+              echo "Packet.dll already exists. Skipping download."
+          fi
+
+          # Check and download wpcap.dll
+          if [ ! -f "wpcap.dll" ]; then
+              echo "wpcap.dll not found. Downloading..."
+              wget https://github.com/edamametechnologies/edamame_posture_cli/raw/refs/heads/main/windows/wpcap.dll -O wpcap.dll
+              chmod +x wpcap.dll
+          else
+              echo "wpcap.dll already exists. Skipping download."
+          fi
         elif [[ "$RUNNER_OS" == "Linux" ]]; then
           # Update package lists and install necessary packages
           sudo apt-get update
