@@ -72,6 +72,7 @@ runs:
     - name: Dependencies
       run: |
         if [[ "$RUNNER_OS" == "Windows" ]]; then
+          cd
           # Install wget and curl using Chocolatey if not already installed
           if ! choco list -lo | grep -q '^wget$'; then
             choco install wget -y --force
@@ -80,9 +81,6 @@ runs:
             choco install curl -y
           fi
           choco install vcredist2015 --package-parameters "/install /quiet /norestart" --yes
-          # TODO Install npcap TO TEST
-          # wget https://nmap.org/npcap/dist/npcap-1.80.exe
-          # autohotkey ./windows/npcap.ahk ./npcap-1.80.exe
           wget https://github.com/edamametechnologies/edamame_posture_cli/raw/refs/heads/main/windows/Packet.dll -O Packet.dll
           chmod +x Packet.dll
           wget https://github.com/edamametechnologies/edamame_posture_cli/raw/refs/heads/main/windows/wpcap.dll -O wpcap.dll
