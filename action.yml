@@ -83,10 +83,10 @@ runs:
           # TODO Install npcap TO TEST
           # wget https://nmap.org/npcap/dist/npcap-1.80.exe
           # autohotkey ./windows/npcap.ahk ./npcap-1.80.exe
-          wget https://github.com/edamametechnologies/edamame_posture_cli/raw/refs/heads/main/windows/Packet.dll -O ./Packet.dll
-          chmod +x ./Packet.dll 
-          wget https://github.com/edamametechnologies/edamame_posture_cli/raw/refs/heads/main/windows/wpcap.dll -O ./wpcap.dll
-          chmod +x ./wpcap.dll
+          wget https://github.com/edamametechnologies/edamame_posture_cli/raw/refs/heads/main/windows/Packet.dll -O Packet.dll
+          chmod +x Packet.dll
+          wget https://github.com/edamametechnologies/edamame_posture_cli/raw/refs/heads/main/windows/wpcap.dll -O wpcap.dll
+          chmod +x wpcap.dll
         elif [[ "$RUNNER_OS" == "Linux" ]]; then
           # Update package lists and install necessary packages
           sudo apt-get update
