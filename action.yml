@@ -206,14 +206,14 @@ runs:
               sudo ./edamame_posture status > posture_status.txt
             fi
 
-            # Check if the output indicates no background process is running
-            if grep -q "No background process is running." posture_status.txt; then
+            # Check if the output indicates Error getting connection status: transport error
+            if grep -q "Error getting connection status: transport error" posture_status.txt; then
               echo "No background process is running. Proceeding to start the process."
             else
               # Extract User and Domain from the status
-              current_user=$(grep ' - User:' posture_status.txt | awk -F': ' '{print $2}')
-              current_domain=$(grep ' - Domain:' posture_status.txt | awk -F': ' '{print $2}')
-              connected=$(grep ' - Connected:' posture_status.txt | awk -F': ' '{print $2}')
+              current_user=$(grep -i 'user:' posture_status.txt | awk -F': ' '{print $2}')
+              current_domain=$(grep -i 'domain:' posture_status.txt | awk -F': ' '{print $2}')
+              connected=$(grep -i 'connected:' posture_status.txt | awk -F': ' '{print $2}')
 
               echo "Current User: $current_user"
               echo "Current Domain: $current_domain"
